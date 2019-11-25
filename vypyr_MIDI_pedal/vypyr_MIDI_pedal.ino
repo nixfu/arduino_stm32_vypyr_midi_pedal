@@ -6,32 +6,27 @@
   Mode 4   Record/Play      Stop          Erase   
 */
 
-// constants won't change. They're used here to set pin numbers:
-#define button0_Pin PB12  // the number of the pushbutton pin
-#define button1_Pin PB3  // the number of the pushbutton pin
-#define button2_Pin PB4  // the number of the pushbutton pin
-#define button3_Pin PB5  // the number of the pushbutton pin
-#define button4_Pin PB6  // the number of the pushbutton pin
-#define button5_Pin PB13 // the number of the pushbutton pin
+//#define DEBUG
 
-#define led1_Pin PB11      // the number of the LED pin
-#define led2_Pin PB10      // the number of the LED pin
-#define led3_Pin PB1      // the number of the LED pin
-#define led4_Pin PB0      // the number of the LED pin
-#define led5_Pin PA7      // the number of the LED pin
-#define led6_Pin PA6      // the number of the LED pin
+#define button0_Pin PB12
+#define button1_Pin PB3
+#define button2_Pin PB4
+#define button3_Pin PB5
+#define button4_Pin PB6
+#define button5_Pin PB13
+#define led1_Pin PB11
+#define led2_Pin PB10    
+#define led3_Pin PB1
+#define led4_Pin PB0
+#define led5_Pin PA7
+#define led6_Pin PA6
 #define led7_Pin PA5
 #define led8_Pin PA4 
 #define led9_Pin PA3
 #define led10_Pin PA2
-
 #define pedal_Pin PA0
 
-#define BAUD 115200
-
-//#define DEBUG
-
-// variables will change:
+// variables
 int button0_State = HIGH;
 int button1_State = HIGH;
 int button2_State = HIGH;
@@ -51,10 +46,10 @@ int mode_Last = 1;
 int pedal_State = 1;
 int pedal_Last = 1;
 int pedal_Value = 0;
-int wah_State = 0;
 
 int tuner_State = 0;
 int tuner_Last = 0;
+
 
 void setup() {
   // initialize the LED pins as an output:
@@ -64,7 +59,6 @@ void setup() {
   pinMode(led4_Pin, OUTPUT);
   pinMode(led5_Pin, OUTPUT);
   pinMode(led6_Pin, OUTPUT);
-
   pinMode(led7_Pin, OUTPUT);
   pinMode(led8_Pin, OUTPUT);
   pinMode(led9_Pin, OUTPUT);
@@ -80,10 +74,10 @@ void setup() {
 
   #ifdef DEBUG
     // open serial debug output
-    Serial1.begin(BAUD);
+    Serial1.begin(115200);
   #else
     // open serial MIDI output
-    Serial1.begin(31250);            //MIDI communicates at 31250 baud
+    Serial1.begin(31250);   //MIDI communicates at 31250 baud
     // Set MIDI program 00
     Serial1.write(0xC0); // Program change
     Serial1.write(0x00); //  00
@@ -102,8 +96,8 @@ void setup() {
   digitalWrite(led9_Pin, LOW);
   digitalWrite(led10_Pin, LOW);
 
-  pinMode(pedal_Pin, INPUT);
-  analogReadResolution(7);
+  pinMode(pedal_Pin, INPUT); // adc pedal pin
+  analogReadResolution(7);   // midi can only use 7bits/0-127
 }
 
 void loop() {
@@ -118,103 +112,50 @@ void loop() {
 
   // handle wah button presses
   if (button5_State && !button5_Last ) {
-    #ifdef DEBUG
-      Serial1.println("Button-5-PRESS");
-    #endif
     pedal_State ++;
     if (pedal_State > 3) {
       pedal_State = 1;
     }
-    
     if (pedal_State != pedal_Last ) {
-      #ifdef DEBUG
-        Serial1.println("pedal_State:");
-        Serial1.println(pedal_State);
-      #endif
-      if (pedal_State == 1) {
+      switch (pedal_State) {
+        case 1:
           digitalWrite(led5_Pin, LOW);
           digitalWrite(led6_Pin, LOW);
           send_disable_wah();
-          // turn off wah if needed
-          //Serial1.write(0xB0);
-          //Serial1.write(0x05);
-          //Serial1.write(0x00);
-          //wah_State = 0;        
-      } else if (pedal_State == 2) {
+          break;
+        case 2:
           digitalWrite(led5_Pin, HIGH);
           digitalWrite(led6_Pin, LOW);
           send_disable_wah();
-          // disable wah
-          //Serial1.write(0xB0);
-          //Serial1.write(0x05);
-          //Serial1.write(0x00);
-          //wah_State = 0;        
-      } else if (pedal_State == 3) {
+          break;
+        case 3:
           digitalWrite(led5_Pin, LOW);
           digitalWrite(led6_Pin, HIGH);
-          // enabe wah
-          //Serial1.write(0x90);
-          //Serial1.write(0x11);
-          //Serial1.write(0x7F);
-          //Serial1.write(0xB0);
-          //Serial1.write(0x05);
-          //Serial1.write(0x7F);
           send_enable_wah();
+          break;
       }
-      #ifdef DEBUG
-        Serial1.println("wah_State:");
-        Serial1.println(wah_State);
-      #endif
     }
   }
   button5_Last = button5_State;
   pedal_Last = pedal_State;
-  //end wah/button5
+  //end wah/vol button
 
-  // update pedal levels
+  // update pedal levels if enabled
   if (pedal_State > 1 ) {
     pedal_Value = analogRead(pedal_Pin);
     if (pedal_State == 3) {
-      #ifdef DEBUG
-        Serial1.println("Wah Value:");
-        Serial1.println(pedal_Value);
-        Serial1.println(pedal_Value, HEX);
-      #endif
       send_wah_value(pedal_Value);
-        //Serial1.write(0xB0);
-        //Serial1.write(0x22);
-        //Serial1.write(pedal_Value);
-        //Serial1.write(0xB0);
-        //Serial1.write(0x06);
-        //Serial1.write(pedal_Value);
     } else if (pedal_State == 2) {
-      #ifdef DEBUG
-       Serial1.println("Volume Value:");
-       Serial1.println(pedal_Value);
-       Serial1.println(pedal_Value, HEX);
-      #endif
       send_volume_value(pedal_Value);
-      //Serial1.write(0xB0);
-      //Serial1.write(0x24);
-      //Serial1.write(pedal_Value);  // value in hex
     }
   }
 
   // handle mode change button presses
   if (button0_State && !button0_Last ) {
-    #ifdef DEBUG
-      Serial1.println("Button-0-PRESS");
-    #endif
-    delay(10);
     mode_State ++;
     if (mode_State > 4) {
       mode_State = 1;
     }
-    #ifdef DEBUG
-      Serial1.println("mode_State:");
-      Serial1.println(mode_State);
-    #endif
-
     if (mode_State != mode_Last ) {
       digitalWrite(led1_Pin, LOW);
       digitalWrite(led2_Pin, LOW);
@@ -252,9 +193,6 @@ void loop() {
   //BUTTON 1
   if (button1_State && !button1_Last ) {
     digitalWrite(led7_Pin, HIGH); 
-    #ifdef DEBUG
-      Serial1.println("Button-1-PRESS");
-    #endif
     switch (mode_State) {
       case 1:
         send_bank_up();
@@ -276,9 +214,7 @@ void loop() {
   
   // BUTTON 2
   if (button2_State && !button2_Last ) {
-    #ifdef DEBUG
-      Serial1.println("Button-2-PRESS");
-    #endif
+    digitalWrite(led8_Pin, HIGH); 
     switch (mode_State) {
       case 1:
         send_bank_down();
@@ -293,16 +229,14 @@ void loop() {
         send_loop_stop();
         break;
     }
-    delay(10);
-    // case do different actions based on current mode_State
+    delay(20);
+    digitalWrite(led8_Pin, LOW); 
   }
   button2_Last = button2_State;
   
   // BUTTON 3
   if (button3_State && !button3_Last ) {
-    #ifdef DEBUG
-      Serial1.println("Button-3-PRESS");
-    #endif
+    digitalWrite(led9_Pin, HIGH);         
     switch (mode_State) {
       case 1:
         send_boost();
@@ -317,16 +251,15 @@ void loop() {
         send_loop_erase();
         break;       
     }
-    delay(10);
+    delay(20);
+    digitalWrite(led9_Pin, LOW); 
     // case do different actions based on current mode_State
   }
   button3_Last = button3_State;
   
   // BUTTON 4
   if (button4_State && !button4_Last ) {
-    #ifdef DEBUG
-      Serial1.println("Button-4-PRESS");
-    #endif
+    digitalWrite(led10_Pin, HIGH);     
     switch (mode_State) {
       case 1:
         send_tuner();
@@ -341,7 +274,8 @@ void loop() {
         send_taptempo();
         break;        
     }
-    delay(10);
+    delay(20);
+    digitalWrite(led10_Pin, LOW); 
     // case do different actions based on current mode_State
   }
   button4_Last = button4_State;
