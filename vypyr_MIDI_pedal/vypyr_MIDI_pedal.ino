@@ -1,5 +1,5 @@
 /*
-  Peavy Midi Pedal
+  Peavy Vypyr Midi Pedal - 11/24/2019 nixfu
   Mode 1   Bank up          Bank Down     Boost           Tuner
   Mode 2   Preset 1         Preset 2      Preset 3        Preset 4
   Mode 3   Effect on/off    Delay on/off  Reverb on/off   Stomp on/Off
@@ -8,69 +8,69 @@
 
 //#define DEBUG
 
-#define button0_Pin PB12
-#define button1_Pin PB3
-#define button2_Pin PB4
-#define button3_Pin PB5
-#define button4_Pin PB6
-#define button5_Pin PB13
-#define led1_Pin PB11
-#define led2_Pin PB10    
-#define led3_Pin PB1
-#define led4_Pin PB0
-#define led5_Pin PA7
-#define led6_Pin PA6
-#define led7_Pin PA5
-#define led8_Pin PA4 
-#define led9_Pin PA3
-#define led10_Pin PA2
-#define pedal_Pin PA0
+// pin assignments for STM32 Bluepill
+// digital pins
+#define buttonModePin   PB12
+#define button1_Pin     PB3
+#define button2_Pin     PB4
+#define button3_Pin     PB5
+#define button4_Pin     PB6
+#define buttonPedal_Pin PB13
+#define ledMode1_Pin    PB11
+#define ledMode2_Pin    PB10    
+#define ledMode3_Pin    PB1 
+#define ledMode4_Pin    PB0
+#define ledPedal1_Pin   PA7
+#define ledPedal2_Pin   PA6
+#define ledButton1_Pin  PA5
+#define ledButton2_Pin  PA4
+#define ledButton3_Pin  PA3
+#define ledButton4_Pin  PA2
+// adc / analog pins
+#define pedal_Pin       PA0
 
 // variables
-int button0_State = HIGH;
+int buttonModeState = HIGH;
 int button1_State = HIGH;
 int button2_State = HIGH;
 int button3_State = HIGH;
 int button4_State = HIGH;
-int button5_State = HIGH;
-int button0_Last = HIGH;
+int buttonPedal_State = HIGH;
+int buttonModeLast = HIGH;
 int button1_Last = HIGH;
 int button2_Last = HIGH;
 int button3_Last = HIGH;
 int button4_Last = HIGH;
-int button5_Last = HIGH;
-
+int buttonPedal_Last = HIGH;
 int mode_State = 1;
 int mode_Last = 1;
-
 int pedal_State = 1;
 int pedal_Last = 1;
 int pedal_Value = 0;
-
 int tuner_State = 0;
 int tuner_Last = 0;
 
 
 void setup() {
   // initialize the LED pins as an output:
-  pinMode(led1_Pin, OUTPUT);
-  pinMode(led2_Pin, OUTPUT);
-  pinMode(led3_Pin, OUTPUT);
-  pinMode(led4_Pin, OUTPUT);
-  pinMode(led5_Pin, OUTPUT);
-  pinMode(led6_Pin, OUTPUT);
-  pinMode(led7_Pin, OUTPUT);
-  pinMode(led8_Pin, OUTPUT);
-  pinMode(led9_Pin, OUTPUT);
-  pinMode(led10_Pin, OUTPUT);
+  pinMode(ledMode1_Pin, OUTPUT);
+  pinMode(ledMode2_Pin, OUTPUT);
+  pinMode(ledMode3_Pin, OUTPUT);
+  pinMode(ledMode4_Pin, OUTPUT);
+  pinMode(ledPedal1_Pin, OUTPUT);
+  pinMode(ledPedal2_Pin, OUTPUT);
+  pinMode(ledButton1_Pin, OUTPUT);
+  pinMode(ledButton2_Pin, OUTPUT);
+  pinMode(ledButton3_Pin, OUTPUT);
+  pinMode(ledButton4_Pin, OUTPUT);
 
   // initialize the pushbutton pins as an input:
-  pinMode(button0_Pin, INPUT);
+  pinMode(buttonModePin, INPUT);
   pinMode(button1_Pin, INPUT);
   pinMode(button2_Pin, INPUT);
   pinMode(button3_Pin, INPUT);
   pinMode(button4_Pin, INPUT);
-  pinMode(button5_Pin, INPUT);
+  pinMode(buttonPedal_Pin, INPUT);
 
   #ifdef DEBUG
     // open serial debug output
@@ -83,18 +83,18 @@ void setup() {
     Serial1.write(0x00); //  00
   #endif
 
-  // turnon led1 and  turn off others
-  digitalWrite(led1_Pin, HIGH);
-  digitalWrite(led2_Pin, LOW);
-  digitalWrite(led3_Pin, LOW);
-  digitalWrite(led4_Pin, LOW);
-  digitalWrite(led5_Pin, LOW);
-  digitalWrite(led6_Pin, LOW);
+  // turnon ledMode1 and  turn off others
+  digitalWrite(ledMode1_Pin, HIGH);
+  digitalWrite(ledMode2_Pin, LOW);
+  digitalWrite(ledMode3_Pin, LOW);
+  digitalWrite(ledMode4_Pin, LOW);
+  digitalWrite(ledPedal1_Pin, LOW);
+  digitalWrite(ledPedal2_Pin, LOW);
 
-  digitalWrite(led7_Pin, LOW);
-  digitalWrite(led8_Pin, LOW);
-  digitalWrite(led9_Pin, LOW);
-  digitalWrite(led10_Pin, LOW);
+  digitalWrite(ledButton1_Pin, LOW);
+  digitalWrite(ledButton2_Pin, LOW);
+  digitalWrite(ledButton3_Pin, LOW);
+  digitalWrite(ledButton4_Pin, LOW);
 
   pinMode(pedal_Pin, INPUT); // adc pedal pin
   analogReadResolution(7);   // midi can only use 7bits/0-127
@@ -103,15 +103,15 @@ void setup() {
 void loop() {
 
   // read the state of the pushbutton value:
-  button0_State = digitalRead(button0_Pin);
+  buttonModeState = digitalRead(buttonModePin);
   button1_State = digitalRead(button1_Pin);
   button2_State = digitalRead(button2_Pin);
   button3_State = digitalRead(button3_Pin);
   button4_State = digitalRead(button4_Pin);
-  button5_State = digitalRead(button5_Pin);
+  buttonPedal_State = digitalRead(buttonPedal_Pin);
 
   // handle wah button presses
-  if (button5_State && !button5_Last ) {
+  if (buttonPedal_State && !buttonPedal_Last ) {
     pedal_State ++;
     if (pedal_State > 3) {
       pedal_State = 1;
@@ -119,24 +119,24 @@ void loop() {
     if (pedal_State != pedal_Last ) {
       switch (pedal_State) {
         case 1:
-          digitalWrite(led5_Pin, LOW);
-          digitalWrite(led6_Pin, LOW);
+          digitalWrite(ledPedal1_Pin, LOW);
+          digitalWrite(ledPedal2_Pin, LOW);
           send_disable_wah();
           break;
         case 2:
-          digitalWrite(led5_Pin, HIGH);
-          digitalWrite(led6_Pin, LOW);
+          digitalWrite(ledPedal1_Pin, HIGH);
+          digitalWrite(ledPedal2_Pin, LOW);
           send_disable_wah();
           break;
         case 3:
-          digitalWrite(led5_Pin, LOW);
-          digitalWrite(led6_Pin, HIGH);
+          digitalWrite(ledPedal1_Pin, LOW);
+          digitalWrite(ledPedal2_Pin, HIGH);
           send_enable_wah();
           break;
       }
     }
   }
-  button5_Last = button5_State;
+  buttonPedal_Last = buttonPedal_State;
   pedal_Last = pedal_State;
   //end wah/vol button
 
@@ -151,48 +151,43 @@ void loop() {
   }
 
   // handle mode change button presses
-  if (button0_State && !button0_Last ) {
+  if (buttonModeState && !buttonModeLast ) {
     mode_State ++;
     if (mode_State > 4) {
       mode_State = 1;
     }
     if (mode_State != mode_Last ) {
-      digitalWrite(led1_Pin, LOW);
-      digitalWrite(led2_Pin, LOW);
-      digitalWrite(led3_Pin, LOW);
-      digitalWrite(led4_Pin, LOW);
+      digitalWrite(ledMode1_Pin, LOW);
+      digitalWrite(ledMode2_Pin, LOW);
+      digitalWrite(ledMode3_Pin, LOW);
+      digitalWrite(ledMode4_Pin, LOW);
       switch (mode_State) {
         case 1:
-          //Serial1.println("LED-1");
-          digitalWrite(led1_Pin, HIGH);
+          digitalWrite(ledMode1_Pin, HIGH);
           break;
         case 2:
-          //Serial1.println("LED-2");
-          digitalWrite(led2_Pin, HIGH);
+          digitalWrite(ledMode2_Pin, HIGH);
           break;
         case 3:
-          //Serial1.println("LED-3");
-          digitalWrite(led3_Pin, HIGH);
+          digitalWrite(ledMode3_Pin, HIGH);
           break;
         case 4:
-          //Serial1.println("LED-4");
-          digitalWrite(led4_Pin, HIGH);
+          digitalWrite(ledMode4_Pin, HIGH);
           break;
         default:
-          //Serial1.println("LED-1");
-          digitalWrite(led1_Pin, HIGH);
+          digitalWrite(ledMode1_Pin, HIGH);
           mode_State = 1;
           break;
       }
     }
   }
-  button0_Last = button0_State;
+  buttonModeLast = buttonModeState;
   mode_Last = mode_State;
   //end mode/button0
 
   //BUTTON 1
   if (button1_State && !button1_Last ) {
-    digitalWrite(led7_Pin, HIGH); 
+    digitalWrite(ledButton1_Pin, HIGH); 
     switch (mode_State) {
       case 1:
         send_bank_up();
@@ -201,20 +196,20 @@ void loop() {
         send_preset_1();
         break;
       case 3:
-        send_stomp_onoff();
+        send_effect_onoff();
         break;
       case 4:
         send_loop_playrec();
         break;
     }
     delay(20);
-    digitalWrite(led7_Pin, LOW); 
+    digitalWrite(ledButton1_Pin, LOW); 
   }
   button1_Last = button1_State;
   
   // BUTTON 2
   if (button2_State && !button2_Last ) {
-    digitalWrite(led8_Pin, HIGH); 
+    digitalWrite(ledButton2_Pin, HIGH); 
     switch (mode_State) {
       case 1:
         send_bank_down();
@@ -223,43 +218,42 @@ void loop() {
         send_preset_2();
         break;
       case 3:
-        send_effect_onoff();
+        send_delay_onoff();        
         break;
       case 4:
         send_loop_stop();
         break;
     }
     delay(20);
-    digitalWrite(led8_Pin, LOW); 
+    digitalWrite(ledButton2_Pin, LOW); 
   }
   button2_Last = button2_State;
   
   // BUTTON 3
   if (button3_State && !button3_Last ) {
-    digitalWrite(led9_Pin, HIGH);         
+    digitalWrite(ledButton3_Pin, HIGH);         
     switch (mode_State) {
       case 1:
-        send_boost();
         break;
       case 2:
         send_preset_3();
         break;
       case 3:
-        send_delay_onoff();
+        send_reverb_onoff();
         break;
       case 4:
         send_loop_erase();
         break;       
     }
     delay(20);
-    digitalWrite(led9_Pin, LOW); 
+    digitalWrite(ledButton3_Pin, LOW); 
     // case do different actions based on current mode_State
   }
   button3_Last = button3_State;
   
   // BUTTON 4
   if (button4_State && !button4_Last ) {
-    digitalWrite(led10_Pin, HIGH);     
+    digitalWrite(ledButton4_Pin, HIGH);     
     switch (mode_State) {
       case 1:
         send_tuner();
@@ -267,15 +261,14 @@ void loop() {
       case 2:
         send_preset_4();
         break;
-      case 3:
-        send_reverb_onoff();
+      case 3:      
+        send_stomp_onoff();
         break;
       case 4:
-        send_taptempo();
         break;        
     }
     delay(20);
-    digitalWrite(led10_Pin, LOW); 
+    digitalWrite(ledButton4_Pin, LOW); 
     // case do different actions based on current mode_State
   }
   button4_Last = button4_State;
@@ -322,9 +315,7 @@ void send_volume_value(int value) {
   Serial1.write(value);
 }
 
-
 void send_bank_down() {
-
   //Bank Down
   Serial1.write(0x90);
   Serial1.write(0x10);
@@ -332,11 +323,9 @@ void send_bank_down() {
   Serial1.write(0x90);
   Serial1.write(0x10);
   Serial1.write(0x00);
-
 }
 
 void send_bank_up() {
-
   //Bank Up
   Serial1.write(0x90);
   Serial1.write(0x0E);
@@ -344,7 +333,6 @@ void send_bank_up() {
   Serial1.write(0x90);
   Serial1.write(0x0E);
   Serial1.write(0x00);
-  
 }
 
 void send_preset_1() {
@@ -393,8 +381,7 @@ void send_loop_playrec() {
   Serial1.write(0x7F);
   Serial1.write(0x90);
   Serial1.write(0x00);
-  Serial1.write(0x00);
-  
+  Serial1.write(0x00); 
 }
 
 void send_loop_stop() {
@@ -404,7 +391,6 @@ void send_loop_stop() {
   Serial1.write(0x90);
   Serial1.write(0x02);
   Serial1.write(0x00);
-  
 }
 
 void send_loop_erase() {
@@ -414,16 +400,7 @@ void send_loop_erase() {
   delay(5000);
   Serial1.write(0x90);
   Serial1.write(0x02);
-  Serial1.write(0x00);
-  
-}
-
-void send_taptempo() {
-  
-}
-
-void send_boost() {
-  
+  Serial1.write(0x00);  
 }
 
 void send_tuner() {
@@ -457,7 +434,6 @@ void send_effect_onoff() {
 }
 
 void send_stomp_onoff() {
-
   //stomp on/off
   Serial1.write(0x90); //Note
   Serial1.write(0x0C); //Manual
@@ -479,9 +455,7 @@ void send_stomp_onoff() {
   Serial1.write(0x90); //Note
   Serial1.write(0x0C); //Manual
   Serial1.write(0x00);
-
 }
-
 
 void send_delay_onoff() {
   //Delay on off
